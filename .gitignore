@@ -1,0 +1,6 @@
+/vendor
+/node_modules
+.env
+/backend/vendor
+/frontend/node_modules
+/storage/*.key
