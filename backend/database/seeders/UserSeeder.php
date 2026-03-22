@@ -27,5 +27,23 @@ class UserSeeder extends Seeder
                 'role' => 'user',
             ]
         );
+
+        User::updateOrCreate(
+            ['email' => 'user2@example.com'],
+            [
+                'name' => 'Usuário 2',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'user3@example.com'],
+            [
+                'name' => 'Usuário 3',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+            ]
+        );
     }
 }

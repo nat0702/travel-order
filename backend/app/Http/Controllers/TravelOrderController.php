@@ -6,11 +6,12 @@ use App\Http\Requests\StoreTravelOrderRequest;
 use App\Http\Requests\UpdateTravelOrderStatusRequest;
 use App\Models\TravelOrder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TravelOrderController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = Auth::guard('api')->user();
 
@@ -38,12 +39,16 @@ class TravelOrderController extends Controller
 
         $travelOrders = $query->latest()->get();
 
-        return response()->json($travelOrders);
+        return response()->json([
+            'message' => 'Pedidos listados com sucesso.',
+            'data' => $travelOrders,
+        ]);
     }
 
     public function store(StoreTravelOrderRequest $request): JsonResponse
     {
         $user = Auth::guard('api')->user();
+        $data = $request->validated();
 
         $travelOrder = TravelOrder::create([
             'user_id' => $user->id,
@@ -53,7 +58,12 @@ class TravelOrderController extends Controller
             'status' => 'solicitado',
         ]);
 
-        return response()->json($travelOrder, 201);
+        $travelOrder->load('user');
+
+        return response()->json([
+            'message' => 'Pedido de viagem criado com sucesso.',
+            'data' => $travelOrder,
+        ],201);
     }
 
     public function show(int $id): JsonResponse
@@ -68,12 +78,16 @@ class TravelOrderController extends Controller
             ], 403);
         }
 
-        return response()->json($travelOrder);
+        return response()->json([
+            'message' => 'Pedido encontrado com sucesso.',
+            'data' => $travelOrder,
+        ]);
     }
 
     public function updateStatus(UpdateTravelOrderStatusRequest $request, int $id): JsonResponse
     {
         $user = Auth::guard('api')->user();
+        $data = $request->validated();
 
         $travelOrder = TravelOrder::findOrFail($id);
 
@@ -89,16 +103,19 @@ class TravelOrderController extends Controller
             ], 403);
         }
 
-        if ($travelOrder->status === 'aprovado' && $request->status === 'cancelado') {
+        if ($travelOrder->status === 'aprovado' && $data['status'] === 'cancelado') {
             return response()->json([
                 'message' => 'Um pedido aprovado não pode ser cancelado.'
             ], 422);
         }
 
         $travelOrder->update([
-            'status' => $request->status,
+            'status' => $data['status'],
         ]);
 
-        return response()->json($travelOrder);
+        return response()->json([
+            'message' => 'Status do pedido atualizado com sucesso.',
+            'data' => $travelOrder,
+        ]);
     }
 }
