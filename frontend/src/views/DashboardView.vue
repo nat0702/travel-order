@@ -16,6 +16,10 @@
     <section class="content-card">
       <div class="section-header">
         <h2>Lista de pedidos</h2>
+        <button class="new-button" @click="showCreateForm = !showCreateForm">
+          {{ showCreateForm ? 'Fechar formulário' : 'Novo Pedido' }}
+        </button>
+
         <button class="refresh-button" @click="fetchTravelOrders" :disabled="loading">
           {{ loading ? 'Carregando...' : 'Atualizar' }}
         </button>
@@ -37,7 +41,48 @@
         Nenhum pedido encontrado.
       </p>
       
+      <div v-if="showCreateForm" class="create-form-card">
+    <h3>Novo pedido de viagem</h3>
 
+    <form @submit.prevent="handleCreateTravelOrder" class="create-form">
+        <div class="form-group">
+        <label for="destination">Destino</label>
+        <input
+            id="destination"
+            v-model="createForm.destination"
+            type="text"
+            placeholder="Digite o destino"
+            required
+        />
+        </div>
+
+        <div class="form-group">
+        <label for="departure_date">Data de ida</label>
+        <input
+            id="departure_date"
+            v-model="createForm.departure_date"
+            type="date"
+            required
+        />
+        </div>
+
+        <div class="form-group">
+        <label for="return_date">Data de volta</label>
+        <input
+            id="return_date"
+            v-model="createForm.return_date"
+            type="date"
+            required
+        />
+        </div>
+
+        <div class="form-actions">
+        <button type="submit" class="submit-button" :disabled="loading">
+            {{ loading ? 'Salvando...' : 'Salvar pedido' }}
+        </button>
+        </div>
+    </form>
+    </div>
       <div v-else class="table-wrapper">
 
         <div class="filters">
@@ -115,6 +160,44 @@ const loading = ref(false)
 const errorMessage = ref('')
 const selectedStatus = ref('')
 const successMessage = ref('')
+const showCreateForm = ref(false)
+
+const createForm = ref({
+  destination: '',
+  departure_date: '',
+  return_date: '',
+})
+
+async function handleCreateTravelOrder() {
+  loading.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    await api.post('/travel-orders', createForm.value)
+
+    successMessage.value = 'Pedido criado com sucesso.'
+    showCreateForm.value = false
+
+    createForm.value = {
+      destination: '',
+      departure_date: '',
+      return_date: '',
+    }
+
+    await fetchTravelOrders()
+  } catch (error) {
+    if (error?.response?.status === 422) {
+      const errors = error.response.data.errors
+      errorMessage.value = Object.values(errors).flat().join(' ')
+    } else {
+      errorMessage.value =
+        error?.response?.data?.message || 'Não foi possível criar o pedido.'
+    }
+  } finally {
+    loading.value = false
+  }
+}
 
 async function fetchTravelOrders() {
   loading.value = true
@@ -178,6 +261,81 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.new-button,
+.submit-button {
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #059669;
+  color: #ffffff;
+}
+
+.new-button:disabled,
+.submit-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.create-form-card {
+  margin-bottom: 20px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.create-form-card h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  color: #1f2937;
+}
+
+.create-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-group input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: #2563eb;
+}
+
+.form-actions {
+  display: flex;
+  align-items: end;
+}
+
 .dashboard-page {
   min-height: 100vh;
   background: #f4f6f8;
