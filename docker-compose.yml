@@ -3,6 +3,7 @@ services:
     build:
       context: ./backend
     container_name: travel_app
+    working_dir: /var/www
     volumes:
       - ./backend:/var/www
     networks:
