@@ -57,14 +57,15 @@ docker exec -it travel_app bash
 ### 4. Configurar ambiente Laravel
 
 ```bash
+composer install
 cp .env.example .env 
 php artisan key:generate 
-php artisan jwt:secret
+php artisan jwt:secret  -> yes
 ```
 
 ### 5. Rodar migrations e seeders
 ```bash
-p hp artisan migrate --seed
+php artisan migrate --seed
 ```
 ---
 
