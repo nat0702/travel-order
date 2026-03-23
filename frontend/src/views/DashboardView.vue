@@ -33,13 +33,16 @@
     <section class="content-card">
       <div class="section-header">
         <h2>Lista de pedidos</h2>
-        <button class="new-button" @click="showCreateForm = !showCreateForm">
-          {{ showCreateForm ? 'Fechar formulário' : 'Novo Pedido' }}
-        </button>
 
-        <button class="refresh-button" @click="fetchTravelOrders" :disabled="loading">
-          {{ loading ? 'Carregando...' : 'Atualizar' }}
-        </button>
+        <div class="header-actions">
+          <button class="new-button" @click="showCreateForm = !showCreateForm">
+            {{ showCreateForm ? 'Fechar formulário' : 'Novo Pedido' }}
+          </button>
+
+          <button class="refresh-button" @click="fetchTravelOrders" :disabled="loading">
+            {{ loading ? 'Carregando...' : 'Atualizar' }}
+          </button>
+        </div>
       </div>
 
       <p v-if="errorMessage" class="error-message">
@@ -100,7 +103,7 @@
         </div>
     </form>
     </div>
-      <div v-else class="table-wrapper">
+      <div class="table-wrapper">
 
         <div class="filters">
         <select v-model="selectedStatus" @change="fetchTravelOrders">
@@ -164,7 +167,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import { getUser, logout } from '@/services/authService'
@@ -179,6 +182,7 @@ const selectedStatus = ref('')
 const successMessage = ref('')
 const showCreateForm = ref(false)
 const notifications = ref([])
+let notificationsInterval = null
 
 const createForm = ref({
   destination: '',
@@ -208,6 +212,12 @@ async function markNotificationAsRead(notificationId) {
   } catch (error) {
     console.error('Erro ao marcar notificação como lida:', error)
   }
+}
+
+function startNotificationsPolling() {
+  notificationsInterval = setInterval(() => {
+    fetchNotifications()
+  }, 5000)
 }
 
 async function handleCreateTravelOrder() {
@@ -300,6 +310,13 @@ function formatDate(date) {
 onMounted(() => {
   fetchTravelOrders()
   fetchNotifications()
+  startNotificationsPolling()
+})
+
+onBeforeUnmount(() => {
+  if(notificationsInterval) {
+    clearInterval(notificationsInterval)
+  }
 })
 </script>
 
