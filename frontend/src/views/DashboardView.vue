@@ -4,7 +4,7 @@
       <div>
         <h1>Pedidos de Viagem</h1>
         <p class="subtitle">
-          Bem-vinda, {{ user?.name }} ({{ user?.role }})
+          Olá, {{ user?.name }} ({{ user?.role }})
         </p>
       </div>
 
@@ -23,6 +23,10 @@
 
       <p v-if="errorMessage" class="error-message">
         {{ errorMessage }}
+      </p>
+
+      <p v-if="successMessage" class="success-message">
+        {{ successMessage }}
       </p>
 
       <p v-if="loading" class="info-message">
@@ -53,6 +57,7 @@
               <th>Data de ida</th>
               <th>Data de volta</th>
               <th>Status</th>
+              <th v-if="user?.role === 'admin'">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -66,6 +71,27 @@
                 <span class="status-badge" :class="order.status">
                   {{ order.status }}
                 </span>
+              </td>
+              <td v-if="user?.role === 'admin'" class="actions-cell">
+                <template v-if="order.status === 'solicitado'">
+                    <button
+                    class="approve-button"
+                    @click="updateStatus(order.id, 'aprovado')"
+                    :disabled="loading"
+                    >
+                    Aprovar
+                    </button>
+
+                    <button
+                    class="cancel-button"
+                    @click="updateStatus(order.id, 'cancelado')"
+                    :disabled="loading"
+                    >
+                    Cancelar
+                    </button>
+                </template>
+
+                <span v-else class="no-actions">—</span>
               </td>
             </tr>
           </tbody>
@@ -88,10 +114,12 @@ const travelOrders = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
 const selectedStatus = ref('')
+const successMessage = ref('')
 
 async function fetchTravelOrders() {
   loading.value = true
   errorMessage.value = ''
+  successMessage.value = ''
 
   try {
     const params = {}
@@ -106,6 +134,28 @@ async function fetchTravelOrders() {
   } catch (error) {
     errorMessage.value =
       error?.response?.data?.message || 'Não foi possível carregar os pedidos.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function updateStatus(id, status) {
+  loading.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    await api.patch(`/travel-orders/${id}/status`, { status })
+
+    successMessage.value =
+      status === 'aprovado'
+        ? 'Pedido aprovado com sucesso.'
+        : 'Pedido cancelado com sucesso.'
+
+    await fetchTravelOrders()
+  } catch (error) {
+    errorMessage.value =
+      error?.response?.data?.message || 'Erro ao atualizar status.'
   } finally {
     loading.value = false
   }
@@ -272,5 +322,46 @@ td {
   padding: 0 12px;
   border-radius: 8px;
   border: 1px solid #d1d5db;
+}
+
+.success-message {
+  color: #059669;
+  margin-bottom: 16px;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.approve-button,
+.cancel-button {
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.approve-button {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.cancel-button {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.approve-button:disabled,
+.cancel-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.no-actions {
+  color: #9ca3af;
 }
 </style>
