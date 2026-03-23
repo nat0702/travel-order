@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTravelOrderRequest;
 use App\Http\Requests\UpdateTravelOrderStatusRequest;
+use App\Notifications\TravelOrderStatusUpdatedNotification;
 use App\Models\TravelOrder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,19 +23,19 @@ class TravelOrderController extends Controller
         }
 
         if (request()->filled('status')) {
-            $query->where('status', request('status'));
+            $query->where('status', $request->status);
         }
 
         if (request()->filled('destination')) {
-            $query->where('destination', 'like', '%' . request('destination') . '%');
+            $query->where('destination', 'like', '%' . $request->destination . '%');
         }
 
         if (request()->filled('departure_start')) {
-            $query->whereDate('departure_date', '>=', request('departure_start'));
+            $query->whereDate('departure_date', '>=', $request->departure_start);
         }
 
         if (request()->filled('departure_end')) {
-            $query->whereDate('departure_date', '<=', request('departure_end'));
+            $query->whereDate('departure_date', '<=', $request->departure_end);
         }
 
         $travelOrders = $query->latest()->get();
@@ -52,9 +53,9 @@ class TravelOrderController extends Controller
 
         $travelOrder = TravelOrder::create([
             'user_id' => $user->id,
-            'destination' => $request->destination,
-            'departure_date' => $request->departure_date,
-            'return_date' => $request->return_date,
+            'destination' => $data['destination'],
+            'departure_date' => $data['departure_date'],
+            'return_date' => $data['return_date'],
             'status' => 'solicitado',
         ]);
 
@@ -112,6 +113,10 @@ class TravelOrderController extends Controller
         $travelOrder->update([
             'status' => $data['status'],
         ]);
+
+        $travelOrder->user->notify(
+            new TravelOrderStatusUpdatedNotification($travelOrder)
+        );
 
         return response()->json([
             'message' => 'Status do pedido atualizado com sucesso.',

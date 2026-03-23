@@ -1,4 +1,21 @@
 <template>
+    <div v-if="unreadNotifications.length" class="notifications-container">
+    <div
+      v-for="notification in unreadNotifications"
+      :key="notification.id"
+      class="notification-toast"
+    >
+      <div class="notification-content">
+        <p>{{ notification.data.message }}</p>
+        <button
+          class="close-notification-button"
+          @click="markNotificationAsRead(notification.id)"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
   <div class="dashboard-page">
     <header class="dashboard-header">
       <div>
@@ -147,7 +164,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import { getUser, logout } from '@/services/authService'
@@ -161,12 +178,37 @@ const errorMessage = ref('')
 const selectedStatus = ref('')
 const successMessage = ref('')
 const showCreateForm = ref(false)
+const notifications = ref([])
 
 const createForm = ref({
   destination: '',
   departure_date: '',
   return_date: '',
 })
+
+const unreadNotifications = computed(() =>
+  notifications.value.filter((notification) => !notification.read_at)
+)
+
+async function fetchNotifications() {
+  try {
+    const response = await api.get('/notifications')
+    notifications.value = response.data.data ?? []
+  } catch (error) {
+    console.error('Erro ao carregar notificações:', error)
+  }
+}
+
+async function markNotificationAsRead(notificationId) {
+  try {
+    await api.patch(`/notifications/${notificationId}/read`)
+    notifications.value = notifications.value.filter(
+      (notification) => notification.id !== notificationId
+    )
+  } catch (error) {
+    console.error('Erro ao marcar notificação como lida:', error)
+  }
+}
 
 async function handleCreateTravelOrder() {
   loading.value = true
@@ -257,269 +299,7 @@ function formatDate(date) {
 
 onMounted(() => {
   fetchTravelOrders()
+  fetchNotifications()
 })
 </script>
 
-<style scoped>
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.new-button,
-.submit-button {
-  height: 40px;
-  border: none;
-  border-radius: 8px;
-  padding: 0 16px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  background: #059669;
-  color: #ffffff;
-}
-
-.new-button:disabled,
-.submit-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.create-form-card {
-  margin-bottom: 20px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.create-form-card h3 {
-  margin: 0 0 16px;
-  font-size: 18px;
-  color: #1f2937;
-}
-
-.create-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  align-items: end;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-group label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.form-group input {
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-}
-
-.form-group input:focus {
-  border-color: #2563eb;
-}
-
-.form-actions {
-  display: flex;
-  align-items: end;
-}
-
-.dashboard-page {
-  min-height: 100vh;
-  background: #f4f6f8;
-  padding: 32px;
-}
-
-.dashboard-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  gap: 16px;
-}
-
-.dashboard-header h1 {
-  margin: 0;
-  font-size: 28px;
-  color: #111827;
-}
-
-.subtitle {
-  margin: 6px 0 0;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.content-card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  gap: 16px;
-}
-
-.section-header h2 {
-  margin: 0;
-  font-size: 20px;
-  color: #1f2937;
-}
-
-.logout-button,
-.refresh-button {
-  height: 40px;
-  border: none;
-  border-radius: 8px;
-  padding: 0 16px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.logout-button {
-  background: #111827;
-  color: #ffffff;
-}
-
-.refresh-button {
-  background: #2563eb;
-  color: #ffffff;
-}
-
-.logout-button:disabled,
-.refresh-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: #dc2626;
-  margin-bottom: 16px;
-}
-
-.info-message {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.table-wrapper {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 14px 12px;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 14px;
-}
-
-th {
-  color: #374151;
-  font-weight: 700;
-  background: #f9fafb;
-}
-
-td {
-  color: #4b5563;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: capitalize;
-}
-
-.status-badge.solicitado {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-badge.aprovado {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-badge.cancelado {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.filters {
-  margin-bottom: 16px;
-}
-
-.filters select {
-  height: 40px;
-  padding: 0 12px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-}
-
-.success-message {
-  color: #059669;
-  margin-bottom: 16px;
-}
-
-.actions-cell {
-  white-space: nowrap;
-}
-
-.approve-button,
-.cancel-button {
-  height: 32px;
-  border: none;
-  border-radius: 6px;
-  padding: 0 10px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-right: 8px;
-}
-
-.approve-button {
-  background: #16a34a;
-  color: #ffffff;
-}
-
-.cancel-button {
-  background: #dc2626;
-  color: #ffffff;
-}
-
-.approve-button:disabled,
-.cancel-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.no-actions {
-  color: #9ca3af;
-}
-</style>

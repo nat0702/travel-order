@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TravelOrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,4 +14,7 @@ Route::middleware('auth:api')->group(function() {
     Route::post('/travel-orders', [TravelOrderController::class, 'store']);
     Route::get('/travel-orders/{id}', [TravelOrderController::class, 'show']);
     Route::patch('/travel-orders/{id}/status', [TravelOrderController::class, 'updateStatus']);
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });
